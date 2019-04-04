@@ -1,8 +1,14 @@
-import os, pyautogui, time
+from pynput.mouse import Controller, Button
+from pynput import keyboard
+import os, time
 from PIL import ImageGrab, Image
 
 x_pad = 254
 y_pad = 42
+current = set()
+combinations = {keyboard.Key.ctrl_l, keyboard.Key.shift, keyboard.KeyCode(char='q')}
+script = True
+
 bronze = {"color1" : (134, 90, 62), "color2" : (143, 98, 80), "color3" : (84, 41, 14), "color4" : (138, 96, 59), "color5" : (136, 94, 61)}
 manganeso = {}
 def Screencap():
@@ -11,10 +17,30 @@ def Screencap():
     #im.save(os.environ['USERPROFILE'] + "\\screenshots\\sc.png", "PNG")
     return im
 
+def on_press(key):
+    if key in combinations:
+        current.add(key)
+        global script
+        if all(k in current for k in combinations):
+            if script:
+                script = False
+                execute()
+            else:
+                script = True
+
+def on_release(key):
+    try:
+        current.remove(key)
+    except KeyError:
+        pass
+
 def MouseEvents(x, y):
-    pyautogui.click(x = x_pad+x, y = y_pad+y)
+    mouse = Controller()
+    mouse.position = x_pad+x, y_pad+y
+    mouse.click(Button.left, 1)
     time.sleep(0.1)
-    pyautogui.click(x = x_pad+x+38, y = y_pad+y+45)
+    mouse.move(38, 45)
+    mouse.click(Button.left, 1)
     time.sleep(3)
 
 def detectMineral():
@@ -33,11 +59,19 @@ def detectMineral():
                 break
     return x_pos, y_pos
 
-def __main__():
-    while True:
+def execute():
+    global script
+    while script:
         x, y = detectMineral()
         if x != 0 and y != 0:
             MouseEvents(x, y)
+        if not script:
+            break
+    script = False
+    print("xd")
 
-#Screencap()
+def __main__():
+    with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
+        listener.join()
+
 __main__()
